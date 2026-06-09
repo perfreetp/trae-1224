@@ -143,8 +143,8 @@ export default function HomePage() {
     { delay: 240 },
   ];
 
-  const isFemale = currentChild?.gender === 'female';
-  const avatarEmoji = currentChild?.avatar || (isFemale ? '�' : '�');
+  const isFemale = currentChild?.gender === 'female' || currentChild?.gender === 'girl';
+  const avatarEmoji = currentChild?.avatar || (isFemale ? '👧' : '👦');
   const genderLabel = isFemale ? '小公主' : '小王子';
   const genderBg = isFemale ? 'bg-coral-400/20' : 'bg-sky2-400/20';
   const genderBadgeBg = isFemale ? 'bg-coral-500' : 'bg-sky2-500';
@@ -191,7 +191,7 @@ export default function HomePage() {
                       genderBg
                     )}
                   >
-                    {avatarEmoji}
+                    {avatarEmoji || (isFemale ? '👧' : '👦')}
                   </div>
                   <div
                     className={cn(

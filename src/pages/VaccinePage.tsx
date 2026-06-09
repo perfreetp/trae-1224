@@ -20,6 +20,8 @@ import {
   Camera,
   Timer,
   Activity,
+  Ban,
+  Pause,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useHealthStore, type Vaccine } from '@/store/useHealthStore'
@@ -52,6 +54,20 @@ const statusConfig = {
     text: 'text-purple-700',
     border: 'border-lavender-400',
     icon: CalendarDays,
+  },
+  contraindicated: {
+    label: '禁忌接种',
+    bg: 'bg-gray-200',
+    text: 'text-gray-600',
+    border: 'border-gray-300',
+    icon: Ban,
+  },
+  deferred: {
+    label: '暂缓接种',
+    bg: 'bg-amber-100',
+    text: 'text-amber-700',
+    border: 'border-amber-300',
+    icon: Pause,
   },
 }
 
@@ -319,6 +335,16 @@ function VaccineCard({ vaccine, onAppointment, onCatchUp }: { vaccine: Vaccine; 
                 已预约
               </div>
             )}
+            {vaccine.status === 'contraindicated' && (
+              <div className="px-3 py-1.5 rounded-xl bg-gray-200 text-gray-600 text-xs font-semibold border border-gray-300">
+                <Ban className="w-3.5 h-3.5 inline mr-1" />禁忌
+              </div>
+            )}
+            {vaccine.status === 'deferred' && (
+              <div className="px-3 py-1.5 rounded-xl bg-amber-100 text-amber-700 text-xs font-semibold border border-amber-300">
+                <Pause className="w-3.5 h-3.5 inline mr-1" />暂缓
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-3 flex items-center justify-end">
@@ -377,6 +403,8 @@ export default function VaccinePage() {
   const overdueCount = vaccines.filter((v) => v.status === 'overdue').length
   const scheduledCount = vaccines.filter((v) => v.status === 'scheduled').length
   const pendingCount = vaccines.filter((v) => v.status === 'pending').length
+  const contraindicatedCount = vaccines.filter((v) => v.status === 'contraindicated').length
+  const deferredCount = vaccines.filter((v) => v.status === 'deferred').length
   const overdueVaccines = vaccines.filter((v) => v.status === 'overdue')
 
   const today = new Date()

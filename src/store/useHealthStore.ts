@@ -588,7 +588,7 @@ export const useHealthStore = create<HealthState>()(
         const birthday = child.birthday || now.split('T')[0];
         const newChildId = generateId('child');
         const newChild: ChildProfile = {
-          gender: 'boy' as Gender,
+          gender: (child.gender as Gender) || 'male',
           birthday,
           createdAt: now,
           updatedAt: now,
@@ -929,8 +929,26 @@ export const useHealthStore = create<HealthState>()(
           .medicineRecords.filter((r) => r.childId === childId)
           .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()),
 
-      getActiveMedicines: (childId) =>
-        get().medicineRecords.filter((r) => r.childId === childId && r.status === 'active'),
+      getActiveMedicines: (childId) => {
+        const state = get();
+        const detailList = state.medicinesByChild[childId] || [];
+        const fromDetails = detailList
+          .filter((m) => m.isActive)
+          .map((m) => ({
+            id: m.id,
+            childId: m.childId,
+            medicineName: m.name,
+            dosage: m.dosage,
+            frequency: m.frequency,
+            startDate: m.startDate,
+            endDate: m.endDate,
+            reason: m.category || '',
+            status: 'active' as const,
+            note: m.notes,
+          }));
+        const fromRecords = state.medicineRecords.filter((r) => r.childId === childId && r.status === 'active');
+        return [...fromDetails, ...fromRecords];
+      },
 
       markMedicineTaken: (medicineId, timeIndex) =>
         set((state) => {
@@ -955,13 +973,24 @@ export const useHealthStore = create<HealthState>()(
       addMedicine: (medicine) =>
         set((state) => {
           const childId = state.activeChildId!;
-          const newMed: MedicineDetailRecord = { ...medicine, id: generateId('med'), childId };
+          const newMedId = generateId('med');
+          const newMed: MedicineDetailRecord = { ...medicine, id: newMedId, childId };
           const childMeds = state.medicinesByChild[childId] || [];
+          const newReminder: MedicationReminder = {
+            id: generateId('mr'),
+            childId,
+            name: medicine.name,
+            dosage: medicine.dosage,
+            time: medicine.timePoints && medicine.timePoints[0] ? medicine.timePoints[0].time : '08:00',
+            taken: false,
+            relatedRecordId: newMedId,
+          };
           return {
             medicinesByChild: {
               ...state.medicinesByChild,
               [childId]: [...childMeds, newMed],
             },
+            medicationReminders: [...state.medicationReminders, newReminder],
           };
         }),
       addReaction: (medicineId, reaction) =>

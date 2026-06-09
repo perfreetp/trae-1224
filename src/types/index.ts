@@ -4,7 +4,7 @@ export type Relation = 'father' | 'mother' | 'grandfather' | 'grandmother' | 'ot
 
 export type PermissionLevel = 'admin' | 'edit' | 'view';
 
-export type VaccineStatus = 'completed' | 'pending' | 'overdue' | 'contraindicated' | 'scheduled';
+export type VaccineStatus = 'completed' | 'pending' | 'overdue' | 'contraindicated' | 'scheduled' | 'deferred';
 
 export type SymptomSeverity = 'mild' | 'moderate' | 'severe';
 

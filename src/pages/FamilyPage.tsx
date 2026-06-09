@@ -151,7 +151,7 @@ function ChildEditModal({ child, onClose, onSave }: {
     age: child?.age || 1,
     bloodType: child?.bloodType || 'A型',
     allergies: child?.allergies || [],
-    gender: (child?.gender || 'boy') as Child['gender'],
+    gender: (child?.gender || 'male') as Child['gender'],
     birthday: child?.birthday || new Date().toISOString().split('T')[0],
     createdAt: child?.createdAt || new Date().toISOString(),
     updatedAt: child?.updatedAt || new Date().toISOString(),
@@ -230,6 +230,34 @@ function ChildEditModal({ child, onClose, onSave }: {
                 />
                 <span className="font-bold text-mint-500 w-10 text-right">{form.age}岁</span>
               </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">性别</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setForm({ ...form, gender: 'male' as const })}
+                className={cn(
+                  'py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-1.5',
+                  (form.gender === 'male' || form.gender === 'boy')
+                    ? 'bg-gradient-to-r from-sky2-400 to-blue-500 text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                <span className="text-lg">👦</span>男孩
+              </button>
+              <button
+                onClick={() => setForm({ ...form, gender: 'female' as const })}
+                className={cn(
+                  'py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-1.5',
+                  (form.gender === 'female' || form.gender === 'girl')
+                    ? 'bg-gradient-to-r from-coral-400 to-pink-500 text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                <span className="text-lg">👧</span>女孩
+              </button>
             </div>
           </div>
 
