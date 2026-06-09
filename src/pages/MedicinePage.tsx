@@ -102,7 +102,7 @@ function AddMedicineModal({
 }: {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: Omit<MedicineDetailRecord, 'id'>) => void
+  onSubmit: (data: Omit<MedicineDetailRecord, 'id' | 'childId'>) => void
 }) {
   const [step, setStep] = useState(1)
   const [search, setSearch] = useState('')

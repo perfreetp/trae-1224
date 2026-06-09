@@ -24,7 +24,11 @@ import {
 import { cn } from '@/lib/utils';
 import { calculateAge, formatAgeFromBirthday } from '@/utils/dateUtils';
 import { calculateBMI } from '@/utils/formatters';
-import type { HealthRecord } from '@/types';
+import type { HealthRecord, DentalRecord, VisionRecord, AllergyRecord } from '@/types';
+
+function generateId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 type TabType = 'physical' | 'dental' | 'vision' | 'allergy';
 
@@ -86,13 +90,24 @@ const mockReplacedTeeth = [10, 11];
 export default function GrowthPage() {
   const {
     selectedChildId,
+    activeChildId,
     children,
     getHealthRecordsByChildId,
     getLatestHealthRecord,
     addHealthRecord,
+    setActiveChild,
+    addDentalRecord,
+    addVisionRecord,
+    addAllergyRecord,
+    markToothReplaced,
+    dentalRecordsByChild,
+    visionRecordsByChild,
+    allergyRecordsByChild,
+    replacedTeethByChild,
   } = useHealthStore();
 
-  const currentChild = children.find((c) => c.id === selectedChildId) || children[0];
+  const effectiveChildId = activeChildId || selectedChildId || children[0]?.id;
+  const currentChild = children.find((c) => c.id === effectiveChildId) || children[0];
   const childId = currentChild?.id;
 
   const ageResult = currentChild ? calculateAge(currentChild.birthday) : { years: 0, months: 0, totalMonths: 0 };
@@ -121,10 +136,31 @@ export default function GrowthPage() {
   const [showVisionModal, setShowVisionModal] = useState(false);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
 
-  const [dentalRecords, setDentalRecords] = useState<DentalRecordLocal[]>(mockDentalRecords);
-  const [visionRecords, setVisionRecords] = useState<VisionRecordLocal[]>(mockVisionRecords);
-  const [allergyRecords, setAllergyRecords] = useState<AllergyRecordLocal[]>(mockAllergyRecords);
-  const [replacedTeeth, setReplacedTeeth] = useState<number[]>(mockReplacedTeeth);
+  const dentalRecords = useMemo(() => {
+    if (!childId) return [];
+    return dentalRecordsByChild[childId] || [];
+  }, [childId, dentalRecordsByChild]);
+
+  const visionRecords = useMemo(() => {
+    if (!childId) return [];
+    return visionRecordsByChild[childId] || [];
+  }, [childId, visionRecordsByChild]);
+
+  const allergyRecords = useMemo(() => {
+    if (!childId) return [];
+    return allergyRecordsByChild[childId] || [];
+  }, [childId, allergyRecordsByChild]);
+
+  const replacedTeethNames = useMemo(() => {
+    if (!childId) return [];
+    return replacedTeethByChild[childId] || [];
+  }, [childId, replacedTeethByChild]);
+
+  const replacedTeeth = useMemo(() => {
+    return replacedTeethNames
+      .map((name) => toothNames.indexOf(name))
+      .filter((idx) => idx >= 0);
+  }, [replacedTeethNames]);
 
   const [hwForm, setHwForm] = useState({
     date: new Date().toISOString().slice(0, 10),
@@ -159,38 +195,53 @@ export default function GrowthPage() {
   };
 
   const handleSubmitDental = () => {
-    const newRecord: DentalRecordLocal = {
-      id: Date.now().toString(),
-      ...dentalForm,
-    };
-    setDentalRecords([...dentalRecords, newRecord]);
+    if (!activeChildId) return;
+    addDentalRecord({
+      date: dentalForm.date,
+      toothPosition: dentalForm.toothPosition || '未指定',
+      condition: dentalForm.condition,
+      reason: dentalForm.reason || undefined,
+      doctorAdvice: dentalForm.doctorAdvice || undefined,
+      notes: dentalForm.notes || undefined,
+    });
+    if (dentalForm.toothPosition && (dentalForm.condition.includes('换牙') || dentalForm.condition.includes('脱落'))) {
+      markToothReplaced(dentalForm.toothPosition);
+    }
     setShowDentalModal(false);
     setDentalForm({ date: '', toothPosition: '', condition: '', reason: '', doctorAdvice: '', notes: '' });
   };
 
   const handleSubmitVision = () => {
-    const newRecord: VisionRecordLocal = {
-      id: Date.now().toString(),
-      ...visionForm,
-    };
-    setVisionRecords([...visionRecords, newRecord]);
+    if (!activeChildId) return;
+    addVisionRecord({
+      date: visionForm.date,
+      leftEye: visionForm.leftEye,
+      rightEye: visionForm.rightEye,
+      leftAstigmatism: visionForm.leftAstigmatism,
+      rightAstigmatism: visionForm.rightAstigmatism,
+    });
     setShowVisionModal(false);
   };
 
   const handleSubmitAllergy = () => {
-    const newRecord: AllergyRecordLocal = {
-      id: Date.now().toString(),
-      ...allergyForm,
-    };
-    setAllergyRecords([...allergyRecords, newRecord]);
+    if (!activeChildId) return;
+    addAllergyRecord({
+      allergen: allergyForm.allergen,
+      severity: allergyForm.severity,
+      reaction: allergyForm.reaction,
+      treatment: allergyForm.treatment || undefined,
+      date: allergyForm.date,
+    });
     setShowAllergyModal(false);
     setAllergyForm({ allergen: '', severity: 'mild', reaction: '', treatment: '', date: '' });
   };
 
   const handleMarkTooth = (idx: number) => {
-    setReplacedTeeth((prev) =>
-      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-    );
+    if (!activeChildId) return;
+    const toothName = toothNames[idx];
+    if (toothName) {
+      markToothReplaced(toothName);
+    }
   };
 
   const severityColors = {

@@ -26,17 +26,22 @@ export default function HomePage() {
   const {
     children,
     selectedChildId,
+    activeChildId,
     setSelectedChildId,
+    setActiveChild,
     healthRecords,
     reminders,
     getActiveMedicines,
     completeReminder,
     addHealthRecord,
+    addWaterCup,
+    waterRecordsByChild,
   } = useHealthStore();
 
+  const effectiveChildId = activeChildId || selectedChildId || children[0]?.id;
   const currentChildIndex = useMemo(
-    () => children.findIndex((c) => c.id === selectedChildId),
-    [children, selectedChildId]
+    () => children.findIndex((c) => c.id === effectiveChildId),
+    [children, effectiveChildId]
   );
   const currentChild = children[currentChildIndex] || children[0];
   const childId = currentChild?.id;
@@ -58,8 +63,20 @@ export default function HomePage() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   }, [healthRecords, childId]);
 
+  const childWaterRecords = useMemo(() => {
+    if (!childId) return [];
+    return waterRecordsByChild[childId] || [];
+  }, [childId, waterRecordsByChild]);
+
+  const todayWaterRecord = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return childWaterRecords.find((r) => r.date === today);
+  }, [childWaterRecords]);
+
   const todaySleep = todayRecords?.sleepHours ?? 9.5;
-  const todayWater = todayRecords?.waterIntake ?? 1250;
+  const todayWaterCups = todayWaterRecord?.cups ?? 0;
+  const todayWaterGoal = todayWaterRecord?.goal ?? 8;
+  const todayWater = todayWaterCups * 250;
 
   const pendingMeds = childId ? getActiveMedicines(childId) : [];
   const childReminders = useMemo(() => {
@@ -70,7 +87,8 @@ export default function HomePage() {
   const ageResult = currentChild ? calculateAge(currentChild.birthday) : { years: 0, months: 0 };
   const ageStr = currentChild ? formatAgeFromBirthday(currentChild.birthday) : '';
   const sleepGoal = getRecommendedSleepHours(ageResult.years * 12 + ageResult.months).max;
-  const waterGoal = latestHW?.weight ? getRecommendedWaterIntake(latestHW.weight) : 1500;
+  const waterGoalMl = latestHW?.weight ? getRecommendedWaterIntake(latestHW.weight) : 1500;
+  const waterGoal = todayWaterGoal * 250;
 
   const [showHWForm, setShowHWForm] = useState(false);
   const [hwForm, setHwForm] = useState({
@@ -84,11 +102,13 @@ export default function HomePage() {
 
   const handlePrevChild = () => {
     const newIndex = currentChildIndex <= 0 ? children.length - 1 : currentChildIndex - 1;
-    setSelectedChildId(children[newIndex]?.id ?? null);
+    const newId = children[newIndex]?.id;
+    if (newId) setActiveChild(newId);
   };
   const handleNextChild = () => {
     const newIndex = currentChildIndex >= children.length - 1 ? 0 : currentChildIndex + 1;
-    setSelectedChildId(children[newIndex]?.id ?? null);
+    const newId = children[newIndex]?.id;
+    if (newId) setActiveChild(newId);
   };
 
   const handleSubmitHW = () => {
@@ -109,13 +129,8 @@ export default function HomePage() {
   };
 
   const handleAddWater = () => {
-    if (!childId) return;
-    const newRecord: Omit<HealthRecord, 'id' | 'createdAt'> = {
-      childId,
-      date: new Date().toISOString().split('T')[0],
-      waterIntake: (todayWater || 0) + 250,
-    };
-    addHealthRecord(newRecord);
+    if (!activeChildId) return;
+    addWaterCup();
   };
 
   const sleepPercent = Math.min((todaySleep / sleepGoal) * 100, 100);
@@ -128,10 +143,11 @@ export default function HomePage() {
     { delay: 240 },
   ];
 
-  const avatarEmoji = currentChild?.gender === 'male' ? '👦' : '👧';
-  const genderLabel = currentChild?.gender === 'male' ? '小王子' : '小公主';
-  const genderBg = currentChild?.gender === 'male' ? 'bg-sky2-400/20' : 'bg-coral-400/20';
-  const genderBadgeBg = currentChild?.gender === 'male' ? 'bg-sky2-500' : 'bg-coral-500';
+  const isFemale = currentChild?.gender === 'female';
+  const avatarEmoji = currentChild?.avatar || (isFemale ? '�' : '�');
+  const genderLabel = isFemale ? '小公主' : '小王子';
+  const genderBg = isFemale ? 'bg-coral-400/20' : 'bg-sky2-400/20';
+  const genderBadgeBg = isFemale ? 'bg-coral-500' : 'bg-sky2-500';
 
   return (
     <div className="min-h-screen bg-warm-50 pb-20">
@@ -343,9 +359,14 @@ export default function HomePage() {
           <h3 className="text-sm text-gray-500 mb-3">今日饮水</h3>
           <div className="flex items-end justify-between mb-2">
             <p className="text-3xl font-bold text-gray-800 font-display">
-              {(todayWater / 1000).toFixed(1)}
-              <span className="text-sm font-normal text-gray-400">L</span>
-              <span className="text-xs text-gray-400 ml-1">/ {(waterGoal / 1000).toFixed(1)}L</span>
+              {todayWaterCups}
+              <span className="text-sm font-normal text-gray-400"> 杯</span>
+              <span className="text-xs text-gray-400 ml-1">/ {todayWaterGoal} 杯</span>
+            </p>
+          </div>
+          <div className="flex items-end justify-between mb-3">
+            <p className="text-sm text-gray-400">
+              {(todayWater / 1000).toFixed(1)}L / {(waterGoal / 1000).toFixed(1)}L
             </p>
           </div>
           <div className="h-3 rounded-full bg-sky2-400/20 overflow-hidden">
@@ -357,7 +378,7 @@ export default function HomePage() {
             </div>
           </div>
           <p className="text-xs text-gray-400 mt-2">
-            还差 <span className="font-bold text-sky2-600">{Math.max(waterGoal - todayWater, 0)}ml</span> 达成目标 🎯
+            还差 <span className="font-bold text-sky2-600">{Math.max(todayWaterGoal - todayWaterCups, 0)} 杯</span> 达成目标 🎯
           </p>
         </div>
 

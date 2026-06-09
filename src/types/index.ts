@@ -61,6 +61,7 @@ export interface HealthRecord {
 
 export interface HeightWeightRecord {
   id: string;
+  childId: string;
   date: string;
   height: number;
   weight: number;
@@ -71,6 +72,7 @@ export interface HeightWeightRecord {
 
 export interface DentalRecord {
   id: string;
+  childId: string;
   date: string;
   toothPosition: string;
   condition: string;
@@ -81,6 +83,7 @@ export interface DentalRecord {
 
 export interface VisionRecord {
   id: string;
+  childId: string;
   date: string;
   leftEye: string;
   rightEye: string;
@@ -90,6 +93,7 @@ export interface VisionRecord {
 
 export interface AllergyRecord {
   id: string;
+  childId: string;
   allergen: string;
   severity: 'mild' | 'moderate' | 'severe';
   reaction: string;
@@ -117,6 +121,7 @@ export interface VaccineRecord {
 
 export interface Vaccine {
   id: string;
+  childId: string;
   name: string;
   dose: string;
   ageGroup: string;
@@ -131,6 +136,7 @@ export interface Vaccine {
 }
 
 export interface ObservationRecord {
+  childId: string;
   vaccineId: string;
   vaccineName: string;
   startTime: string;
@@ -141,6 +147,7 @@ export interface ObservationRecord {
 
 export interface Appointment {
   id: string;
+  childId: string;
   vaccineId: string;
   location: string;
   date: string;
@@ -165,6 +172,7 @@ export interface MedicineRecord {
 
 export interface MedicineDetailRecord {
   id: string;
+  childId: string;
   name: string;
   category: string;
   color: string;
